@@ -100,8 +100,6 @@ static constexpr float HEAD_GAUGE_HALF_WIDTH = 0.25f;
 // The guide is laid out the way the participant should see it (move right -> the eyes move right) and then
 // mirrored here
 //
-// ***** set this to false if the guide moves the wrong wayon the real setup ~~~ TEST
-static constexpr bool  HEAD_GUIDE_MIRROR_X = true;
 
 // linear colours (the swapchain is scRGB-linear or sRGB, so these are kept moderate for a dark room)
 static constexpr float GUIDE_GOOD_RGB[3] = { 0.02f, 0.55f, 0.08f }; // green
@@ -441,16 +439,31 @@ void Renderer::renderFixationPoints(VkCommandBuffer cmd, const std::vector<Norma
     for (int xOff : { 0, m_monitorWidth }) {
         setMonitorViewport(cmd, xOff);
 
+        //for (const NormalizedPoint2D& p : points) {
+        //    FixationPointPushConstants pc{};
+        //    pc.centerX = normToNdc(p.x, m_monitorWidth);
+        //    pc.centerY = normToNdc(p.y, m_monitorHeight);
+        //    pc.halfSizeX = halfSizeX;
+        //    pc.halfSizeY = halfSizeY;
+
+        //    vkCmdPushConstants(cmd, m_fixationPointLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(pc), &pc);
+        //    vkCmdDraw(cmd, 6, 1, 0, 0); // horizontal bar
+        //    vkCmdDraw(cmd, 6, 1, 6, 0); // vertical bar
+        //}
+
+        // mirrored
+
         for (const NormalizedPoint2D& p : points) {
             FixationPointPushConstants pc{};
-            pc.centerX = normToNdc(p.x, m_monitorWidth);
+            pc.centerX = normToNdc(1.0f - p.x, m_monitorWidth);
             pc.centerY = normToNdc(p.y, m_monitorHeight);
             pc.halfSizeX = halfSizeX;
             pc.halfSizeY = halfSizeY;
 
             vkCmdPushConstants(cmd, m_fixationPointLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(pc), &pc);
-            vkCmdDraw(cmd, 6, 1, 0, 0); // horizontal bar
-            vkCmdDraw(cmd, 6, 1, 6, 0); // vertical bar
+
+            vkCmdDraw(cmd, 6, 1, 0, 0);
+            vkCmdDraw(cmd, 6, 1, 6, 0);
         }
     }
 }
@@ -521,9 +534,6 @@ void Renderer::drawShape(VkCommandBuffer cmd, ShapeKind kind,
 /// <summary>
 /// Draws a white dot at each given position, on both monitors (the calibration target).
 /// Positions are normalized display area coordinates (Tobii space) and are NOT mirrored
-/// 
-/// 
-/// ***** TEST. I think they should be mirrored.
 /// </summary>
 void Renderer::renderCalibrationDots(VkCommandBuffer cmd, const std::vector<NormalizedPoint2D>& points)
 {
@@ -538,9 +548,7 @@ void Renderer::renderCalibrationDots(VkCommandBuffer cmd, const std::vector<Norm
         setMonitorViewport(cmd, xOff);
 
         for (const NormalizedPoint2D& p : points) {
-            drawShape(cmd, ShapeKind::Ellipse,
-                normToPixelCentre(p.x, m_monitorWidth), normToPixelCentre(p.y, m_monitorHeight),
-                radius, radius, WHITE, 1.0f);
+            drawShape(  cmd,  ShapeKind::Ellipse,   normToPixelCentre(1.0f - p.x, m_monitorWidth), normToPixelCentre(p.y, m_monitorHeight),   radius,  radius, WHITE,  1.0f  );
         }
     }
 }
@@ -572,7 +580,7 @@ void Renderer::renderHeadGuide(VkCommandBuffer cmd, const HeadGuide& g)
     const float gaugeHalfW = HEAD_GAUGE_HALF_WIDTH * H;
 
     // x laid out as the participant should see it -> x on the physical monitor
-    auto physX = [&](float viewX) { return HEAD_GUIDE_MIRROR_X ? (W - viewX) : viewX; };
+    auto physX = [&](float viewX) { return  (W - viewX); };
 
     // eye position (participant's view, 0..1 across the track box) -> pixels in the participant's view
     auto eyeX = [&](const HeadGuideEye& e) { return cx + (std::clamp(e.x, 0.0f, 1.0f) - 0.5f) * rangeX; };
