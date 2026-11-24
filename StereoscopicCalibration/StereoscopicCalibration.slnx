@@ -1,0 +1,7 @@
+<Solution>
+  <Configurations>
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Project Path="StereoscopicCalibration.vcxproj" Id="b794de9f-b7a4-4fb2-a69e-b16a54ff70c9" />
+</Solution>
